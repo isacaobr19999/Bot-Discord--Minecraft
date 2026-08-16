@@ -1,0 +1,23 @@
+name: MinecraftDiscordPlatform
+version: ${version}
+main: br.com.minecraftdiscord.plugin.MinecraftDiscordPlugin
+api-version: '1.21'
+author: Minecraft Discord Platform
+description: Integração assíncrona entre Paper, backend e Discord.
+softdepend:
+  - LuckPerms
+  - Vault
+  - PlaceholderAPI
+  - Essentials
+commands:
+  discord:
+    description: Vincula ou desvincula sua conta Minecraft.
+    usage: /discord <link|unlink>
+    permission: minecraftdiscord.account
+permissions:
+  minecraftdiscord.account:
+    description: Permite gerenciar a própria vinculação.
+    default: true
+  minecraftdiscord.admin:
+    description: Permissões administrativas do plugin.
+    default: op

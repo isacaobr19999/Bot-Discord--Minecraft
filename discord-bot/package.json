@@ -1,0 +1,12 @@
+{
+  "name": "minecraft-discord-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.mjs"
+  },
+  "dependencies": {
+    "discord.js": "^14.25.1"
+  }
+}

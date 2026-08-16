@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1786883920031,
+      "tag": "0000_lethal_adam_warlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1786884295283,
+      "tag": "0001_dazzling_chameleon",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1786885855303,
+      "tag": "0002_misty_big_bertha",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1786887011755,
+      "tag": "0003_fuzzy_susan_delgado",
+      "breakpoints": true
+    }
+  ]
+}

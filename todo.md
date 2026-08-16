@@ -1,0 +1,42 @@
+# Project TODO
+
+- [x] Inicializar a base full-stack com servidor, banco de dados e autenticação.
+- [x] Definir a estrutura monorepo para backend, frontend, plugin Paper, bot Discord, documentação e banco.
+- [x] Documentar contratos de integração, eventos, fonte de verdade dos dados e política de idempotência.
+- [x] Modelar tabelas para jogadores, vínculos de contas, códigos temporários, status, eventos, auditoria e permissões.
+- [x] Criar API autenticada para comunicação entre plugin Paper, bot Discord e site.
+- [x] Implementar geração, validação, expiração, consumo único e revogação de códigos de vinculação.
+- [x] Implementar status do servidor, heartbeat e armazenamento de snapshots sem bloquear o Minecraft.
+- [x] Criar plugin Paper 1.21.x com comunicação assíncrona, configuração e detecção de dependências opcionais.
+- [ ] Integrar opcionalmente LuckPerms, Vault, PlaceholderAPI e Essentials com comportamentos de fallback.
+- [x] Criar bot Discord com comandos públicos, embeds profissionais e componentes interativos.
+- [x] Criar comandos administrativos Discord com permissões configuráveis por cargo e confirmação de execução.
+- [x] Registrar trilhas de auditoria para ações administrativas, vínculos e operações críticas.
+- [x] Implementar eventos Minecraft para Discord com canais configuráveis, fila durável e reconciliação por retry.
+- [x] Implementar bridge de chat bidirecional dedicada com ID de mensagem, origem estruturada, deduplicação e rate limiting.
+- [x] Fora do escopo bot-only: página pública e perfis web não serão entregues.
+- [x] Fora do escopo bot-only: área autenticada web não será entregue.
+- [x] Fora do escopo bot-only: painel administrativo web não será entregue.
+- [x] Fora do escopo bot-only: loja, checkout e pagamentos não serão entregues.
+- [x] Adicionar atualização em tempo real apropriada por polling, reconciliação durável e endpoint de saúde.
+- [ ] Criar testes unitários, de autorização, de idempotência e dos fluxos críticos de integração.
+- [x] Criar README, instruções de instalação, configuração do bot e operação do plugin.
+- [ ] Sincronizar a primeira versão implementada com o repositório GitHub selecionado.
+- [x] Adicionar estados explícitos de erro nas páginas públicas para falhas de status, listagem e perfil.
+- [x] Implementar ingestão real de estatísticas e histórico a partir de eventos do plugin Paper.
+- [x] Adicionar estado de erro e ação de recuperação na área autenticada quando a consulta falhar.
+- [x] Remover valores estatísticos hardcoded do plugin e confirmar emissão de eventos de entrada, saída e chat.
+- [x] Adicionar retry explícito para falha de carregamento da conta autenticada.
+- [x] Decisão de escopo: o produto desta entrega será exclusivamente o bot Discord integrado ao plugin Paper.
+- [x] Desativar páginas e rotas do produto web; manter apenas a infraestrutura técnica necessária do template.
+- [x] Revisar e reclassificar documentações específicas do site/painel para o escopo bot-only.
+- [x] Atualizar o README para descrever somente bot Discord, plugin Paper e backend de integração.
+- [ ] Preservar e consolidar os fluxos do bot: comandos, permissões, vinculação, auditoria e bridge Minecraft–Discord.
+- [x] Implementar consulta de entregas Discord pendentes por status e nextAttemptAt, sem limite artificial aos últimos 50 eventos.
+- [x] Criar fluxo dedicado de chat Discord→Minecraft com ID de mensagem, origem estruturada e deduplicação.
+- [ ] Adicionar prevenção explícita de loop e teste de retry/deduplicação para a bridge bidirecional.
+- [ ] Adicionar testes de integração para bridge, autorização, confirmação de comandos e auditoria de vínculos.
+- [ ] Testar idempotência real de chat Discord, comandos administrativos e entregas por eventId/messageId/commandId.
+- [ ] Testar resgate e desvinculação Discord, revogação de código e registros correspondentes em auditoria.
+- [ ] Testar confirmação de comando administrativo após polling do plugin e atualização final do status.
+- [ ] Testar retry por nextAttemptAt, deduplicação por canal/evento e bloqueio de loop por bridgeOrigin nos endpoints reais.
