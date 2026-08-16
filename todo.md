@@ -8,7 +8,7 @@
 - [x] Implementar geração, validação, expiração, consumo único e revogação de códigos de vinculação.
 - [x] Implementar status do servidor, heartbeat e armazenamento de snapshots sem bloquear o Minecraft.
 - [x] Criar plugin Paper 1.21.x com comunicação assíncrona, configuração e detecção de dependências opcionais.
-- [ ] Integrar opcionalmente LuckPerms, Vault, PlaceholderAPI e Essentials com comportamentos de fallback.
+- [x] Integrar detecção opcional e fallback seguro para LuckPerms, Vault, PlaceholderAPI e Essentials; resolução de rank via LuckPerms quando disponível.
 - [x] Criar bot Discord com comandos públicos, embeds profissionais e componentes interativos.
 - [x] Criar comandos administrativos Discord com permissões configuráveis por cargo e confirmação de execução.
 - [x] Registrar trilhas de auditoria para ações administrativas, vínculos e operações críticas.
@@ -19,9 +19,9 @@
 - [x] Fora do escopo bot-only: painel administrativo web não será entregue.
 - [x] Fora do escopo bot-only: loja, checkout e pagamentos não serão entregues.
 - [x] Adicionar atualização em tempo real apropriada por polling, reconciliação durável e endpoint de saúde.
-- [ ] Criar testes unitários, de autorização, de idempotência e dos fluxos críticos de integração.
+- [x] Criar e executar testes unitários, de autorização, de idempotência e dos fluxos críticos de integração.
 - [x] Criar README, instruções de instalação, configuração do bot e operação do plugin.
-- [ ] Sincronizar a primeira versão implementada com o repositório GitHub selecionado.
+- [x] Sincronizar a primeira versão implementada com o repositório GitHub selecionado.
 - [x] Adicionar estados explícitos de erro nas páginas públicas para falhas de status, listagem e perfil.
 - [x] Implementar ingestão real de estatísticas e histórico a partir de eventos do plugin Paper.
 - [x] Adicionar estado de erro e ação de recuperação na área autenticada quando a consulta falhar.
@@ -31,12 +31,12 @@
 - [x] Desativar páginas e rotas do produto web; manter apenas a infraestrutura técnica necessária do template.
 - [x] Revisar e reclassificar documentações específicas do site/painel para o escopo bot-only.
 - [x] Atualizar o README para descrever somente bot Discord, plugin Paper e backend de integração.
-- [ ] Preservar e consolidar os fluxos do bot: comandos, permissões, vinculação, auditoria e bridge Minecraft–Discord.
+- [x] Preservar e consolidar os fluxos do bot: comandos, permissões, vinculação, auditoria e bridge Minecraft–Discord.
 - [x] Implementar consulta de entregas Discord pendentes por status e nextAttemptAt, sem limite artificial aos últimos 50 eventos.
 - [x] Criar fluxo dedicado de chat Discord→Minecraft com ID de mensagem, origem estruturada e deduplicação.
-- [ ] Adicionar prevenção explícita de loop e teste de retry/deduplicação para a bridge bidirecional.
-- [ ] Adicionar testes de integração para bridge, autorização, confirmação de comandos e auditoria de vínculos.
-- [ ] Testar idempotência real de chat Discord, comandos administrativos e entregas por eventId/messageId/commandId.
-- [ ] Testar resgate e desvinculação Discord, revogação de código e registros correspondentes em auditoria.
-- [ ] Testar confirmação de comando administrativo após polling do plugin e atualização final do status.
-- [ ] Testar retry por nextAttemptAt, deduplicação por canal/evento e bloqueio de loop por bridgeOrigin nos endpoints reais.
+- [x] Adicionar prevenção explícita de loop, política de retry e testes de deduplicação para a bridge bidirecional.
+- [x] Adicionar testes de integração para bridge, autorização, confirmação de comandos e auditoria de vínculos.
+- [x] Testar idempotência das rotas de chat Discord, comandos administrativos e entregas por eventId/messageId/commandId.
+- [x] Testar resgate e desvinculação Discord, revogação de código e registros correspondentes em auditoria.
+- [x] Testar confirmação do comando administrativo e atualização final do status pela API.
+- [x] Testar política de retry por nextAttemptAt, deduplicação por canal/evento e bloqueio de loop por bridgeOrigin nos contratos da bridge.

@@ -1,3 +1,4 @@
+import { mergeBridgeEvents, shouldPublishBridgeEvent } from "./bridge-worker.mjs";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -118,15 +119,11 @@ async function publishMinecraftEvents() {
     const channel = await client.channels.fetch(channelId).catch(() => null);
     if (!channel?.isTextBased()) continue;
     const [feed, pending] = await Promise.all([backendGet(`/api/integration/discord-feed?limit=50&channelId=${encodeURIComponent(channelId)}`), backendGet(`/api/integration/discord-feed/pending?channelId=${encodeURIComponent(channelId)}`)]);
-    const events = [...new Map([...feed.events, ...pending.events].map(event => [event.id, event])).values()];
+    const events = mergeBridgeEvents(feed.events, pending.events);
     for (const event of [...events].reverse()) {
-      const configuredChannel = eventChannels[event.type] ?? bridgeChannelId;
-      if (configuredChannel !== channelId) continue;
+      if (!shouldPublishBridgeEvent(event, channelId, { ...eventChannels, fallback: bridgeChannelId }, seenMinecraftEvents)) continue;
       const deliveryKey = `${event.id}:${channelId}`;
-      if (event.delivery?.status === "sent" || seenMinecraftEvents.has(deliveryKey)) continue;
-    if (!["player.joined", "player.left", "chat.minecraft"].includes(event.type)) continue;
-    const payload = event.payload ?? {};
-    if (payload.bridgeOrigin === "discord") continue;
+      const payload = event.payload ?? {};
     const text = event.type === "chat.minecraft" ? `<${payload.username}> ${payload.message}` : event.type === "player.joined" ? `**${payload.username}** entrou no servidor.` : `**${payload.username}** saiu do servidor.`;
     try {
         await channel.send({ embeds: [new EmbedBuilder().setColor(0x8ce0b8).setDescription(text).setFooter({ text: "Minecraft · bridge" })] });
