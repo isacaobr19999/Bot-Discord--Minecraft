@@ -205,7 +205,9 @@ client.on("interactionCreate", async interaction => {
     }
 
     if (interaction.commandName === "link") {
-      await interaction.reply({ content: "Use `/discord link` no Minecraft para gerar seu código e depois informe-o aqui.", components: [linkActionRow()], ephemeral: true });
+      console.log(`[Discord] /link received from ${interaction.user.id}`);
+      await interaction.deferReply({ ephemeral: true });
+      await interaction.editReply({ content: "Use `/discord link` no Minecraft para gerar seu código e depois informe-o aqui.", components: [linkActionRow()] });
       return;
     }
 

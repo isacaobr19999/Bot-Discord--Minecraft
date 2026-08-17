@@ -45,9 +45,11 @@
 - [x] Validar propagação pública do DNS e preparar snapshot de segurança antes da implantação na VPS.
 - [x] Adicionar configuração Nginx isolada para api.playstorcraft.com.br sem alterar site ou painel.
 - [x] Instalar dependências e configurar backend e bot Discord como serviços systemd.
-- [ ] Compilar e instalar o plugin Paper 1.21.x no servidor Minecraft.
+- [x] Compilar e instalar o plugin Paper 1.21.x no servidor Minecraft.
 - [ ] Executar validação ponta a ponta de saúde, vinculação, bridge de chat e comandos administrativos.
 - [x] Restringir o listener do backend a 127.0.0.1 para não expor a porta 3100 publicamente na VPS.
-- [ ] Criar guia seguro para instalar, configurar, ativar, desativar e atualizar o bot em uma nova VPS.
-- [ ] Revisar o repositório para garantir que nenhum segredo seja enviado ao GitHub.
-- [ ] Sincronizar código e documentação finais com o repositório GitHub.
+- [x] Criar guia seguro para instalar, configurar, ativar, desativar e atualizar o bot em uma nova VPS.
+- [x] Revisar o repositório para garantir que nenhum segredo seja enviado ao GitHub.
+- [x] Sincronizar código e documentação finais com o repositório GitHub.
+- [x] Gerar e validar o plugin Paper com o nome PlayStorCraft-Site.jar.
+- [ ] Corrigir o comando /link do Discord que expira sem resposta após o plugin gerar o código de vinculação.
