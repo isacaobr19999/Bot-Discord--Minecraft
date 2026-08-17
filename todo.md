@@ -42,9 +42,12 @@
 - [x] Testar política de retry por nextAttemptAt, deduplicação por canal/evento e bloqueio de loop por bridgeOrigin nos contratos da bridge.
 - [x] Criar guia passo a passo para implantação do backend, bot Discord e plugin Paper em VPS.
 - [x] Criar checklist de verificação prévia da VPS (recursos, portas, proxy, banco, Node.js, firewall) para evitar conflitos com Pterodactyl e site.
-- [ ] Validar propagação pública do DNS e preparar snapshot de segurança antes da implantação na VPS.
+- [x] Validar propagação pública do DNS e preparar snapshot de segurança antes da implantação na VPS.
 - [x] Adicionar configuração Nginx isolada para api.playstorcraft.com.br sem alterar site ou painel.
-- [ ] Instalar dependências e configurar backend e bot Discord como serviços systemd.
+- [x] Instalar dependências e configurar backend e bot Discord como serviços systemd.
 - [ ] Compilar e instalar o plugin Paper 1.21.x no servidor Minecraft.
 - [ ] Executar validação ponta a ponta de saúde, vinculação, bridge de chat e comandos administrativos.
-- [ ] Restringir o listener do backend a 127.0.0.1 para não expor a porta 3100 publicamente na VPS.
+- [x] Restringir o listener do backend a 127.0.0.1 para não expor a porta 3100 publicamente na VPS.
+- [ ] Criar guia seguro para instalar, configurar, ativar, desativar e atualizar o bot em uma nova VPS.
+- [ ] Revisar o repositório para garantir que nenhum segredo seja enviado ao GitHub.
+- [ ] Sincronizar código e documentação finais com o repositório GitHub.
