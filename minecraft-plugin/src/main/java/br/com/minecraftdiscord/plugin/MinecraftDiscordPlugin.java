@@ -17,6 +17,7 @@ import org.bukkit.Statistic;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -27,6 +28,7 @@ public final class MinecraftDiscordPlugin extends JavaPlugin implements Listener
     private long startedAt;
     private OptionalIntegrations optionalIntegrations;
     private final Set<String> inFlightCommands = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, String> recentChatMessages = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
@@ -76,12 +78,23 @@ public final class MinecraftDiscordPlugin extends JavaPlugin implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onChat(AsyncChatEvent event) {
-        String message = PlainTextComponentSerializer.plainText().serialize(event.message());
-        getLogger().info("Chat bridge event queued: " + event.getPlayer().getName());
+        publishChat(event.getPlayer(), PlainTextComponentSerializer.plainText().serialize(event.message()));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    @SuppressWarnings("deprecation")
+    public void onLegacyChat(AsyncPlayerChatEvent event) {
+        publishChat(event.getPlayer(), event.getMessage());
+    }
+
+    private void publishChat(Player player, String message) {
+        String fingerprint = message + "@" + System.currentTimeMillis() / 2000;
+        if (fingerprint.equals(recentChatMessages.put(player.getUniqueId(), fingerprint))) return;
+        getLogger().info("Chat bridge event queued: " + player.getName());
         backendClient.postEvent("chat.minecraft", "minecraft", Map.of(
                 "serverKey", serverKey,
-                "uuid", event.getPlayer().getUniqueId().toString(),
-                "username", event.getPlayer().getName(),
+                "uuid", player.getUniqueId().toString(),
+                "username", player.getName(),
                 "message", message,
                 "bridgeOrigin", "minecraft"
         )).whenComplete((response, error) -> {
