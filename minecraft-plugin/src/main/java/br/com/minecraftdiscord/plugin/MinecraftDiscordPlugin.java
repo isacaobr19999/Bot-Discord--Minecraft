@@ -1,6 +1,7 @@
 package br.com.minecraftdiscord.plugin;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -75,13 +76,23 @@ public final class MinecraftDiscordPlugin extends JavaPlugin implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onChat(AsyncChatEvent event) {
+        String message = PlainTextComponentSerializer.plainText().serialize(event.message());
+        getLogger().info("Chat bridge event queued: " + event.getPlayer().getName());
         backendClient.postEvent("chat.minecraft", "minecraft", Map.of(
                 "serverKey", serverKey,
                 "uuid", event.getPlayer().getUniqueId().toString(),
                 "username", event.getPlayer().getName(),
-                "message", event.message().toString(),
+                "message", message,
                 "bridgeOrigin", "minecraft"
-        ));
+        )).whenComplete((response, error) -> {
+            if (error != null) {
+                getLogger().warning("Chat bridge event failed: " + error.getMessage());
+            } else if (response.statusCode() >= 300) {
+                getLogger().warning("Chat bridge event rejected: HTTP " + response.statusCode());
+            } else {
+                getLogger().info("Chat bridge event accepted: HTTP " + response.statusCode());
+            }
+        });
     }
 
     private void sendHeartbeat() {
