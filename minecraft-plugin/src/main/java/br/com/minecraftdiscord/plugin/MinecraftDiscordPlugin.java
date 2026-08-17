@@ -74,7 +74,7 @@ public final class MinecraftDiscordPlugin extends JavaPlugin implements Listener
         ));
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onChat(AsyncChatEvent event) {
         String message = PlainTextComponentSerializer.plainText().serialize(event.message());
         getLogger().info("Chat bridge event queued: " + event.getPlayer().getName());

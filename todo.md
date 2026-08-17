@@ -46,10 +46,14 @@
 - [x] Adicionar configuração Nginx isolada para api.playstorcraft.com.br sem alterar site ou painel.
 - [x] Instalar dependências e configurar backend e bot Discord como serviços systemd.
 - [x] Compilar e instalar o plugin Paper 1.21.x no servidor Minecraft.
-- [ ] Executar validação ponta a ponta de saúde, vinculação, bridge de chat e comandos administrativos.
+- [x] Executar validação ponta a ponta de saúde, vinculação, bridge de chat e comandos administrativos.
 - [x] Restringir o listener do backend a 127.0.0.1 para não expor a porta 3100 publicamente na VPS.
 - [x] Criar guia seguro para instalar, configurar, ativar, desativar e atualizar o bot em uma nova VPS.
 - [x] Revisar o repositório para garantir que nenhum segredo seja enviado ao GitHub.
 - [x] Sincronizar código e documentação finais com o repositório GitHub.
 - [x] Gerar e validar o plugin Paper com o nome PlayStorCraft-Site.jar.
-- [ ] Corrigir o comando /link do Discord que expira sem resposta após o plugin gerar o código de vinculação.
+- [x] Corrigir o comando /link do Discord que expira sem resposta após o plugin gerar o código de vinculação.
+- [ ] Validar a bridge de chat ponta a ponta: Minecraft para Discord e Discord para Minecraft, confirmando entrega sem loop.
+- [ ] Validar ao menos um comando administrativo ponta a ponta, como /mc status, confirmando resposta do bot, backend e plugin.
+- [ ] Diagnosticar e corrigir a bridge que não entregou mensagens entre Minecraft e Discord no canal configurado.
+- [ ] Ajustar o listener Paper para processar eventos de chat cancelados por plugins de chat compatíveis, sem interferir na exibição normal.
