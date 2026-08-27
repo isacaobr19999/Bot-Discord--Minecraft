@@ -15,6 +15,7 @@ import {
   TextInputStyle,
 } from "discord.js";
 import { formatMinecraftBridgeEvent } from "./bridge-format.mjs";
+import { parseEventPayload } from "./event-payload.mjs";
 
 const {
   DISCORD_BOT_TOKEN: token,
@@ -158,8 +159,11 @@ async function syncDiscordRoles() {
   try {
     const { events } = await backendGet("/api/integration/discord-roles/pending");
     for (const event of events) {
-      const payload = event.payload ?? {};
-      if (!payload.rank || !payload.username) continue;
+      const payload = parseEventPayload(event.payload);
+      if (!payload.rank || !payload.username) {
+        console.warn(`[Discord] Ignoring role event ${event.id}: payload missing rank or username`);
+        continue;
+      }
 
       try {
         const profile = await backendGet(`/api/integration/player?username=${encodeURIComponent(payload.username)}`);

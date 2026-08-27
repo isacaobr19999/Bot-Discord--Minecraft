@@ -56,6 +56,10 @@
 - [ ] Validar a bridge de chat ponta a ponta: Minecraft para Discord e Discord para Minecraft, confirmando entrega sem loop.
 - [ ] Validar ao menos um comando administrativo ponta a ponta, como /mc status, confirmando resposta do bot, backend e plugin.
 - [ ] Diagnosticar e corrigir a bridge que não entregou mensagens entre Minecraft e Discord no canal configurado.
+- [ ] Validar em produção a bridge no canal configurado: enviar Minecraft para Discord e Discord para Minecraft sem loop.
+- [ ] Registrar no journal do bot e da API evidências de entrega da bridge após o teste final.
+- [ ] Se a não entrega persistir, diagnosticar o polling/publicação da bridge separado do worker de role sync.
+- [x] Normalizar payloads serializados em JSON retornados pela API antes de processar cargos e bridge.
 - [x] Ajustar o listener Paper para processar eventos de chat cancelados por plugins de chat compatíveis, sem interferir na exibição normal.
 - [x] Implementar a sincronização opcional de cargos Discord baseada no grupo LuckPerms do Minecraft.
 - [x] Criar um endpoint/helper que resolva explicitamente o discordUserId vinculado ao jogador Minecraft para a sincronização de cargos.
