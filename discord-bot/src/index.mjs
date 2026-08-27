@@ -158,43 +158,47 @@ async function syncDiscordRoles() {
   if (!guildId) return;
   try {
     const { events } = await backendGet("/api/integration/discord-roles/pending");
-    for (const event of events) {
-      const payload = parseEventPayload(event.payload);
-      if (!payload.rank || !payload.username) {
-        console.warn(`[Discord] Ignoring role event ${event.id}: payload missing rank or username`);
+    for (const rawEvent of events) {
+      const event = rawEvent?.event ?? rawEvent;
+      const payload = parseEventPayload(event?.payload);
+      if (typeof payload.rank !== "string" || !payload.rank.trim() || typeof payload.username !== "string" || !payload.username.trim()) {
+        console.warn(`[Discord] Ignoring role event ${event?.id ?? "unknown"}: payload missing rank or username`);
         continue;
       }
+      const username = payload.username.trim();
+      const rank = payload.rank.trim();
 
       try {
-        const profile = await backendGet(`/api/integration/player?username=${encodeURIComponent(payload.username)}`);
-        if (profile.link?.discordUserId) {
-          const guild = await client.guilds.fetch(guildId).catch(() => null);
-          const member = guild ? await guild.members.fetch(profile.link.discordUserId).catch(() => null) : null;
-          
-          if (member) {
-            const targetRoleId = VIP_ROLE_MAPPING[payload.rank.toLowerCase()];
+        const profile = await backendGet(`/api/integration/player?username=${encodeURIComponent(username)}`);
+        if (!profile.link?.discordUserId) throw new Error("DISCORD_LINK_NOT_FOUND");
+        const guild = await client.guilds.fetch(guildId).catch(() => null);
+        if (!guild) throw new Error("DISCORD_GUILD_NOT_FOUND");
+        const member = await guild.members.fetch(profile.link.discordUserId).catch(() => null);
+        if (!member) throw new Error("DISCORD_MEMBER_NOT_FOUND");
+
+        {
+            const targetRoleId = VIP_ROLE_MAPPING[rank.toLowerCase()];
             if (targetRoleId) {
               const rolesToRemove = [...member.roles.cache.keys()].filter(id => ALL_VIP_ROLE_IDS.has(id) && id !== targetRoleId);
               if (rolesToRemove.length > 0) {
                 await member.roles.remove(rolesToRemove);
-                console.log(`[Discord] Removed VIP roles from ${payload.username}: ${rolesToRemove.join(", ")}`);
+                console.log(`[Discord] Removed VIP roles from ${username}: ${rolesToRemove.join(", ")}`);
               }
               const added = !member.roles.cache.has(targetRoleId);
               if (added) {
                 await member.roles.add(targetRoleId);
-                console.log(`[Discord] Added VIP role ${payload.rank} to ${payload.username}`);
+                console.log(`[Discord] Added VIP role ${rank} to ${username}`);
               }
-              await publishRoleSyncLog({ username: payload.username, rank: payload.rank, added, removedCount: rolesToRemove.length });
+              await publishRoleSyncLog({ username, rank, added, removedCount: rolesToRemove.length });
             } else {
-              console.warn(`[Discord] No VIP role mapped for LuckPerms rank ${payload.rank} (${payload.username})`);
-              await publishRoleSyncLog({ username: payload.username, rank: payload.rank, unmapped: true });
+              console.warn(`[Discord] No VIP role mapped for LuckPerms rank ${rank} (${username})`);
+              await publishRoleSyncLog({ username, rank, unmapped: true });
             }
           }
-        }
         await backendPost("/api/integration/discord-feed/delivery", { eventId: event.id, eventType: event.type, channelId: "discord-roles", success: true });
       } catch (error) {
-        console.error(`[Discord] Role sync failed for ${payload.username}:`, error.message);
-        await publishRoleSyncLog({ username: payload.username, rank: payload.rank, error: error.message });
+        console.error(`[Discord] Role sync failed for ${username}:`, error.message);
+        await publishRoleSyncLog({ username, rank, error: error.message });
         await backendPost("/api/integration/discord-feed/delivery", { eventId: event.id, eventType: event.type, channelId: "discord-roles", success: false, error: error.message }).catch(() => {});
       }
     }

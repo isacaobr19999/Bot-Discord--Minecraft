@@ -60,6 +60,7 @@
 - [ ] Registrar no journal do bot e da API evidências de entrega da bridge após o teste final.
 - [ ] Se a não entrega persistir, diagnosticar o polling/publicação da bridge separado do worker de role sync.
 - [x] Normalizar payloads serializados em JSON retornados pela API antes de processar cargos e bridge.
+- [x] Aceitar eventos de cargos planos ou aninhados e registrar diagnóstico quando vínculo, membro ou cargo Discord não puder ser resolvido.
 - [x] Ajustar o listener Paper para processar eventos de chat cancelados por plugins de chat compatíveis, sem interferir na exibição normal.
 - [x] Implementar a sincronização opcional de cargos Discord baseada no grupo LuckPerms do Minecraft.
 - [x] Criar um endpoint/helper que resolva explicitamente o discordUserId vinculado ao jogador Minecraft para a sincronização de cargos.
