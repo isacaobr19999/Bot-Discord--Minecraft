@@ -68,7 +68,10 @@ public final class MinecraftDiscordPlugin extends JavaPlugin implements Listener
             if (error != null) {
                 getLogger().warning("LuckPerms group lookup failed for " + player.getName() + ": " + error.getMessage());
             } else if (rank != null) {
+                getLogger().info("LuckPerms group resolved for " + player.getName() + ": " + rank);
                 payload.put("rank", rank);
+            } else {
+                getLogger().warning("LuckPerms group unresolved for " + player.getName());
             }
             backendClient.postEvent("player.joined", "minecraft", payload);
         });
@@ -149,7 +152,10 @@ public final class MinecraftDiscordPlugin extends JavaPlugin implements Listener
             if (error != null) {
                 getLogger().warning("LuckPerms group lookup failed for " + player.getName() + ": " + error.getMessage());
             } else if (rank != null) {
+                getLogger().info("LuckPerms group resolved for " + player.getName() + ": " + rank);
                 snapshot.put("rank", rank);
+            } else {
+                getLogger().warning("LuckPerms group unresolved for " + player.getName());
             }
             backendClient.postEvent("player.stats.snapshot", "minecraft", snapshot);
         });

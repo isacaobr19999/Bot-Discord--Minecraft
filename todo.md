@@ -67,3 +67,7 @@
 - [x] Configurar o canal Discord 1492898167405150268 para logs seguros de sincronização LuckPerms e cargos VIP.
 - [x] Diagnosticar por que a alteração LuckPerms não gerou cargo nem log no canal de auditoria.
 - [x] Corrigir a resolução assíncrona do grupo LuckPerms no plugin e melhorar o diagnóstico de envio do rank.
+- [ ] Corrigir a leitura do grupo LuckPerms no JAR atualizado, pois o rank continua nulo em produção.
+- [ ] Instalar na VPS o JAR final PlayStorCraft-Site.jar com a correção baseada nas interfaces públicas do LuckPerms.
+- [ ] Reiniciar somente o Minecraft, conectar _Nube por pelo menos 70 segundos e confirmar via API lastKnownRank=obsidian.
+- [ ] Validar ponta a ponta o cargo Discord e o embed no canal 1492898167405150268 após a correção final.

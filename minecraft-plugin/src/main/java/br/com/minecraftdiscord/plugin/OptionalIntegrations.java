@@ -47,21 +47,24 @@ final class OptionalIntegrations {
     /**
      * Resolve the primary group without blocking the Paper main thread.
      * LuckPerms users are normally cached after login; when they are not,
-     * loadUser completes asynchronously. Vault remains a compatibility fallback.
+     * loadUser completes asynchronously. Reflection targets the public API
+     * interfaces so package-private implementation classes cannot block access.
      */
     CompletionStage<String> resolvePrimaryGroupAsync(Player player) {
         if (luckPerms) {
             try {
-                Class<?> provider = Class.forName("net.luckperms.api.LuckPermsProvider");
-                Object luckPermsApi = provider.getMethod("get").invoke(null);
-                Object userManager = luckPermsApi.getClass().getMethod("getUserManager").invoke(luckPermsApi);
-                Object user = userManager.getClass().getMethod("getUser", UUID.class).invoke(userManager, player.getUniqueId());
+                Class<?> providerClass = Class.forName("net.luckperms.api.LuckPermsProvider");
+                Object luckPermsApi = providerClass.getMethod("get").invoke(null);
+                Class<?> luckPermsClass = Class.forName("net.luckperms.api.LuckPerms");
+                Object userManager = luckPermsClass.getMethod("getUserManager").invoke(luckPermsApi);
+                Class<?> userManagerClass = Class.forName("net.luckperms.api.model.user.UserManager");
+                Object user = userManagerClass.getMethod("getUser", UUID.class).invoke(userManager, player.getUniqueId());
                 if (user != null) {
                     String group = primaryGroupFromUser(user);
                     if (group != null) return CompletableFuture.completedFuture(group);
                 }
 
-                Object loaded = userManager.getClass().getMethod("loadUser", UUID.class).invoke(userManager, player.getUniqueId());
+                Object loaded = userManagerClass.getMethod("loadUser", UUID.class).invoke(userManager, player.getUniqueId());
                 if (loaded instanceof CompletionStage<?> stage) {
                     return stage.handle((value, error) -> {
                         if (error == null && value != null) {
@@ -80,16 +83,20 @@ final class OptionalIntegrations {
 
     private String primaryGroupFromUser(Object user) {
         try {
-            Object group = user.getClass().getMethod("getPrimaryGroup").invoke(user);
+            Class<?> userClass = Class.forName("net.luckperms.api.model.user.User");
+            Object group = userClass.getMethod("getPrimaryGroup").invoke(user);
             if (group instanceof String value && !value.isBlank()) return value;
         } catch (ReflectiveOperationException | RuntimeException ignored) {
             // Older API implementations may expose the value only through cached metadata.
         }
 
         try {
-            Object cachedData = user.getClass().getMethod("getCachedData").invoke(user);
-            Object metaData = cachedData.getClass().getMethod("getMetaData").invoke(cachedData);
-            Object group = metaData.getClass().getMethod("getPrimaryGroup").invoke(metaData);
+            Class<?> userClass = Class.forName("net.luckperms.api.model.user.User");
+            Object cachedData = userClass.getMethod("getCachedData").invoke(user);
+            Class<?> cachedDataClass = Class.forName("net.luckperms.api.cacheddata.CachedDataManager");
+            Object metaData = cachedDataClass.getMethod("getMetaData").invoke(cachedData);
+            Class<?> metaDataClass = Class.forName("net.luckperms.api.cacheddata.CachedMetaData");
+            Object group = metaDataClass.getMethod("getPrimaryGroup").invoke(metaData);
             return group instanceof String value && !value.isBlank() ? value : null;
         } catch (ReflectiveOperationException | RuntimeException ignored) {
             return null;
@@ -100,11 +107,13 @@ final class OptionalIntegrations {
         if (!vault) return null;
         try {
             Class<?> permissionClass = Class.forName("net.milkbowl.vault.permission.Permission");
-            Object services = Bukkit.getServicesManager();
-            Object registration = services.getClass().getMethod("getRegistration", Class.class).invoke(services, permissionClass);
+            Object registration = Bukkit.getServicesManager().getClass()
+                    .getMethod("getRegistration", Class.class)
+                    .invoke(Bukkit.getServicesManager(), permissionClass);
             if (registration == null) return null;
-            Object provider = registration.getClass().getMethod("getProvider").invoke(registration);
-            Object group = provider.getClass().getMethod("getPrimaryGroup", String.class, String.class)
+            Class<?> registrationClass = Class.forName("org.bukkit.plugin.RegisteredServiceProvider");
+            Object provider = registrationClass.getMethod("getProvider").invoke(registration);
+            Object group = permissionClass.getMethod("getPrimaryGroup", String.class, String.class)
                     .invoke(provider, player.getWorld().getName(), player.getName());
             return group instanceof String value && !value.isBlank() ? value : null;
         } catch (ReflectiveOperationException | RuntimeException ignored) {
