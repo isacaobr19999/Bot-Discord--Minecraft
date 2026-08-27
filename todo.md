@@ -56,7 +56,7 @@
 - [ ] Validar a bridge de chat ponta a ponta: Minecraft para Discord e Discord para Minecraft, confirmando entrega sem loop.
 - [ ] Validar ao menos um comando administrativo ponta a ponta, como /mc status, confirmando resposta do bot, backend e plugin.
 - [ ] Diagnosticar e corrigir a bridge que não entregou mensagens entre Minecraft e Discord no canal configurado.
-- [ ] Ajustar o listener Paper para processar eventos de chat cancelados por plugins de chat compatíveis, sem interferir na exibição normal.
+- [x] Ajustar o listener Paper para processar eventos de chat cancelados por plugins de chat compatíveis, sem interferir na exibição normal.
 - [x] Implementar a sincronização opcional de cargos Discord baseada no grupo LuckPerms do Minecraft.
 - [x] Criar um endpoint/helper que resolva explicitamente o discordUserId vinculado ao jogador Minecraft para a sincronização de cargos.
 - [x] Implementar um fluxo dedicado e testado para sincronização de rank LuckPerms -> cargo Discord, sem reutilizar o feed de bridge de chat de forma inadequada.
@@ -67,8 +67,10 @@
 - [x] Configurar o canal Discord 1492898167405150268 para logs seguros de sincronização LuckPerms e cargos VIP.
 - [x] Diagnosticar por que a alteração LuckPerms não gerou cargo nem log no canal de auditoria.
 - [x] Corrigir a resolução assíncrona do grupo LuckPerms no plugin e melhorar o diagnóstico de envio do rank.
-- [ ] Corrigir a leitura do grupo LuckPerms no JAR atualizado, pois o rank continua nulo em produção.
-- [ ] Instalar na VPS o JAR final PlayStorCraft-Site.jar com a correção baseada nas interfaces públicas do LuckPerms.
-- [ ] Reiniciar somente o Minecraft, conectar _Nube por pelo menos 70 segundos e confirmar via API lastKnownRank=obsidian.
+- [x] Corrigir a leitura do grupo LuckPerms no JAR atualizado, pois o rank continua nulo em produção.
+- [x] Instalar na VPS o JAR final PlayStorCraft-Site.jar com a correção baseada nas interfaces públicas do LuckPerms.
+- [x] Reiniciar somente o Minecraft, conectar _Nube por pelo menos 70 segundos e confirmar via API lastKnownRank=obsidian.
 - [ ] Validar ponta a ponta o cargo Discord e o embed no canal 1492898167405150268 após a correção final.
+- [x] Diagnosticar por que o worker de cargos não registrou tentativa após lastKnownRank=obsidian.
+- [x] Corrigir mensagem da bridge que está exibindo nome `undefined`.
 - [x] Registrar explicitamente ranks LuckPerms sem mapeamento de cargo Discord no worker e no canal de auditoria.

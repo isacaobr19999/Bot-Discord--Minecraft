@@ -14,6 +14,7 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
+import { formatMinecraftBridgeEvent } from "./bridge-format.mjs";
 
 const {
   DISCORD_BOT_TOKEN: token,
@@ -216,12 +217,7 @@ async function publishMinecraftEvents() {
       if (!["player.joined", "player.left", "chat.minecraft"].includes(event.type)) continue;
       if (!shouldPublishBridgeEvent(event, channelId, { ...eventChannels, fallback: bridgeChannelId }, seenMinecraftEvents)) continue;
       
-      const payload = event.payload ?? {};
-      const text = event.type === "chat.minecraft" 
-        ? `<${payload.username}> ${payload.message}` 
-        : event.type === "player.joined" 
-          ? `**${payload.username}** entrou no servidor.` 
-          : `**${payload.username}** saiu do servidor.`;
+      const text = formatMinecraftBridgeEvent(event);
       
       try {
         await channel.send({ embeds: [new EmbedBuilder().setColor(0x8ce0b8).setDescription(text).setFooter({ text: "Minecraft · bridge" })] });

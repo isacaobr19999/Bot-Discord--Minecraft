@@ -447,7 +447,7 @@ export async function getPendingRoleSyncs() {
     .where(eq(discordEventDeliveries.channelId, "discord-roles"));
 
   return db
-    .select({ event: integrationEvents })
+    .select()
     .from(integrationEvents)
     .where(
       and(
