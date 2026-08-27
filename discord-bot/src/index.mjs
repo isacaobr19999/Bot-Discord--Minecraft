@@ -23,6 +23,7 @@ const {
   BACKEND_URL: backendUrl = "http://localhost:3000",
   DISCORD_ADMIN_ROLE_IDS: adminRoleIds = "",
   DISCORD_BRIDGE_CHANNEL_ID: bridgeChannelId = "",
+  DISCORD_LOG_CHANNEL_ID: logChannelId = "",
   DISCORD_EVENT_CHANNELS_JSON: eventChannelsJson = "{}",
 } = process.env;
 
@@ -124,6 +125,33 @@ function linkActionRow() {
   return new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("link:open").setLabel("Informar código").setStyle(ButtonStyle.Success));
 }
 
+async function publishRoleSyncLog({ username, rank, added = false, removedCount = 0, error = null, unmapped = false }) {
+  if (!logChannelId) return;
+  try {
+    const channel = await client.channels.fetch(logChannelId).catch(() => null);
+    if (!channel?.isTextBased()) return;
+    const failed = Boolean(error);
+    const description = failed
+      ? `Falha ao sincronizar o cargo de **${username}**.`
+      : unmapped
+        ? `O rank de **${username}** não possui cargo Discord configurado.`
+        : `Sincronização LuckPerms concluída para **${username}**.`;
+    const details = failed
+      ? `Erro: ${String(error).slice(0, 240)}`
+      : unmapped
+        ? `Rank **${rank}** recebido, mas ele não está no mapa de cargos VIP.`
+        : `${added ? `Cargo **${rank}** adicionado.` : `Cargo **${rank}** já estava aplicado.`} ${removedCount > 0 ? `${removedCount} cargo(s) VIP antigo(s) removido(s).` : "Nenhum cargo VIP antigo removido."}`;
+    await channel.send({ embeds: [new EmbedBuilder()
+      .setColor(failed ? 0xe05d5d : unmapped ? 0xf2c14e : 0x8ce0b8)
+      .setTitle(failed ? "Falha na sincronização de cargo" : unmapped ? "Rank sem cargo mapeado" : "Sincronização de cargo")
+      .setDescription(`${description}\n${details}`)
+      .addFields({ name: "Rank LuckPerms", value: String(rank || "não informado"), inline: true })
+      .setTimestamp()] });
+  } catch (logError) {
+    console.error("[Discord] Role audit log failed", logError.message);
+  }
+}
+
 async function syncDiscordRoles() {
   if (!guildId) return;
   try {
@@ -146,16 +174,22 @@ async function syncDiscordRoles() {
                 await member.roles.remove(rolesToRemove);
                 console.log(`[Discord] Removed VIP roles from ${payload.username}: ${rolesToRemove.join(", ")}`);
               }
-              if (!member.roles.cache.has(targetRoleId)) {
+              const added = !member.roles.cache.has(targetRoleId);
+              if (added) {
                 await member.roles.add(targetRoleId);
                 console.log(`[Discord] Added VIP role ${payload.rank} to ${payload.username}`);
               }
+              await publishRoleSyncLog({ username: payload.username, rank: payload.rank, added, removedCount: rolesToRemove.length });
+            } else {
+              console.warn(`[Discord] No VIP role mapped for LuckPerms rank ${payload.rank} (${payload.username})`);
+              await publishRoleSyncLog({ username: payload.username, rank: payload.rank, unmapped: true });
             }
           }
         }
         await backendPost("/api/integration/discord-feed/delivery", { eventId: event.id, eventType: event.type, channelId: "discord-roles", success: true });
       } catch (error) {
         console.error(`[Discord] Role sync failed for ${payload.username}:`, error.message);
+        await publishRoleSyncLog({ username: payload.username, rank: payload.rank, error: error.message });
         await backendPost("/api/integration/discord-feed/delivery", { eventId: event.id, eventType: event.type, channelId: "discord-roles", success: false, error: error.message }).catch(() => {});
       }
     }
@@ -203,6 +237,7 @@ async function publishMinecraftEvents() {
 
 client.once("ready", readyClient => {
   console.log(`[Discord] Logged in as ${readyClient.user.tag}`);
+  if (!logChannelId) console.warn("[Discord] DISCORD_LOG_CHANNEL_ID não configurado; auditoria de cargos ficará somente no journalctl");
   if (bridgeChannelId) setInterval(() => publishMinecraftEvents().catch(error => console.error("[Discord] Bridge poll failed", error)), 5000);
   setInterval(() => syncDiscordRoles().catch(error => console.error("[Discord] Role sync poll failed", error)), 10000);
 });

@@ -71,3 +71,4 @@
 - [ ] Instalar na VPS o JAR final PlayStorCraft-Site.jar com a correção baseada nas interfaces públicas do LuckPerms.
 - [ ] Reiniciar somente o Minecraft, conectar _Nube por pelo menos 70 segundos e confirmar via API lastKnownRank=obsidian.
 - [ ] Validar ponta a ponta o cargo Discord e o embed no canal 1492898167405150268 após a correção final.
+- [x] Registrar explicitamente ranks LuckPerms sem mapeamento de cargo Discord no worker e no canal de auditoria.
