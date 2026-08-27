@@ -57,3 +57,8 @@
 - [ ] Validar ao menos um comando administrativo ponta a ponta, como /mc status, confirmando resposta do bot, backend e plugin.
 - [ ] Diagnosticar e corrigir a bridge que não entregou mensagens entre Minecraft e Discord no canal configurado.
 - [ ] Ajustar o listener Paper para processar eventos de chat cancelados por plugins de chat compatíveis, sem interferir na exibição normal.
+- [x] Implementar a sincronização opcional de cargos Discord baseada no grupo LuckPerms do Minecraft.
+- [x] Criar um endpoint/helper que resolva explicitamente o discordUserId vinculado ao jogador Minecraft para a sincronização de cargos.
+- [x] Implementar um fluxo dedicado e testado para sincronização de rank LuckPerms -> cargo Discord, sem reutilizar o feed de bridge de chat de forma inadequada.
+- [x] Adicionar tratamento de erros e logs explícitos para sucesso/falha de atribuição e remoção de cargos Discord.
+- [ ] Validar localmente com checagem de sintaxe/testes e depois atualizar a VPS, confirmando em produção a troca automática de cargos para pelo menos um jogador vinculado.

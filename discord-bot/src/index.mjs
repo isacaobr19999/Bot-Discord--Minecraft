@@ -31,6 +31,18 @@ if (!token || !applicationId || !integrationKey) {
 }
 
 const configuredAdminRoles = new Set(adminRoleIds.split(",").map(value => value.trim()).filter(Boolean));
+
+const VIP_ROLE_MAPPING = {
+  "obsidian": "1542424081981509653",
+  "diamante": "1542424544357253161",
+  "esmeralda": "1542424679820697651",
+  "ouro": "1542424823731453972",
+  "ferro": "1542424939787722752",
+  "default": "1542425230851444787",
+  "membro": "1542425230851444787"
+};
+const ALL_VIP_ROLE_IDS = new Set(Object.values(VIP_ROLE_MAPPING));
+
 const rest = new REST({ version: "10" }).setToken(token);
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 const seenMinecraftEvents = new Set();
@@ -112,20 +124,72 @@ function linkActionRow() {
   return new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("link:open").setLabel("Informar código").setStyle(ButtonStyle.Success));
 }
 
+async function syncDiscordRoles() {
+  if (!guildId) return;
+  try {
+    const { events } = await backendGet("/api/integration/discord-roles/pending");
+    for (const event of events) {
+      const payload = event.payload ?? {};
+      if (!payload.rank || !payload.username) continue;
+
+      try {
+        const profile = await backendGet(`/api/integration/player?username=${encodeURIComponent(payload.username)}`);
+        if (profile.link?.discordUserId) {
+          const guild = await client.guilds.fetch(guildId).catch(() => null);
+          const member = guild ? await guild.members.fetch(profile.link.discordUserId).catch(() => null) : null;
+          
+          if (member) {
+            const targetRoleId = VIP_ROLE_MAPPING[payload.rank.toLowerCase()];
+            if (targetRoleId) {
+              const rolesToRemove = [...member.roles.cache.keys()].filter(id => ALL_VIP_ROLE_IDS.has(id) && id !== targetRoleId);
+              if (rolesToRemove.length > 0) {
+                await member.roles.remove(rolesToRemove);
+                console.log(`[Discord] Removed VIP roles from ${payload.username}: ${rolesToRemove.join(", ")}`);
+              }
+              if (!member.roles.cache.has(targetRoleId)) {
+                await member.roles.add(targetRoleId);
+                console.log(`[Discord] Added VIP role ${payload.rank} to ${payload.username}`);
+              }
+            }
+          }
+        }
+        await backendPost("/api/integration/discord-feed/delivery", { eventId: event.id, eventType: event.type, channelId: "discord-roles", success: true });
+      } catch (error) {
+        console.error(`[Discord] Role sync failed for ${payload.username}:`, error.message);
+        await backendPost("/api/integration/discord-feed/delivery", { eventId: event.id, eventType: event.type, channelId: "discord-roles", success: false, error: error.message }).catch(() => {});
+      }
+    }
+  } catch (error) {
+    console.error("[Discord] Role sync worker failed:", error.message);
+  }
+}
+
 async function publishMinecraftEvents() {
   const targetChannels = [...new Set(Object.values(eventChannels).filter(Boolean).concat(bridgeChannelId).filter(Boolean))];
   if (targetChannels.length === 0) return;
+
   for (const channelId of targetChannels) {
     const channel = await client.channels.fetch(channelId).catch(() => null);
     if (!channel?.isTextBased()) continue;
-    const [feed, pending] = await Promise.all([backendGet(`/api/integration/discord-feed?limit=50&channelId=${encodeURIComponent(channelId)}`), backendGet(`/api/integration/discord-feed/pending?channelId=${encodeURIComponent(channelId)}`)]);
+
+    const [feed, pending] = await Promise.all([
+      backendGet(`/api/integration/discord-feed?limit=50&channelId=${encodeURIComponent(channelId)}`), 
+      backendGet(`/api/integration/discord-feed/pending?channelId=${encodeURIComponent(channelId)}`)
+    ]);
     const events = mergeBridgeEvents(feed.events, pending.events);
+
     for (const event of [...events].reverse()) {
+      if (!["player.joined", "player.left", "chat.minecraft"].includes(event.type)) continue;
       if (!shouldPublishBridgeEvent(event, channelId, { ...eventChannels, fallback: bridgeChannelId }, seenMinecraftEvents)) continue;
-      const deliveryKey = `${event.id}:${channelId}`;
+      
       const payload = event.payload ?? {};
-    const text = event.type === "chat.minecraft" ? `<${payload.username}> ${payload.message}` : event.type === "player.joined" ? `**${payload.username}** entrou no servidor.` : `**${payload.username}** saiu do servidor.`;
-    try {
+      const text = event.type === "chat.minecraft" 
+        ? `<${payload.username}> ${payload.message}` 
+        : event.type === "player.joined" 
+          ? `**${payload.username}** entrou no servidor.` 
+          : `**${payload.username}** saiu do servidor.`;
+      
+      try {
         await channel.send({ embeds: [new EmbedBuilder().setColor(0x8ce0b8).setDescription(text).setFooter({ text: "Minecraft · bridge" })] });
         seenMinecraftEvents.add(`${event.id}:${channelId}`);
         await backendPost("/api/integration/discord-feed/delivery", { eventId: event.id, eventType: event.type, channelId, success: true });
@@ -140,6 +204,7 @@ async function publishMinecraftEvents() {
 client.once("ready", readyClient => {
   console.log(`[Discord] Logged in as ${readyClient.user.tag}`);
   if (bridgeChannelId) setInterval(() => publishMinecraftEvents().catch(error => console.error("[Discord] Bridge poll failed", error)), 5000);
+  setInterval(() => syncDiscordRoles().catch(error => console.error("[Discord] Role sync poll failed", error)), 10000);
 });
 
 client.on("messageCreate", async message => {

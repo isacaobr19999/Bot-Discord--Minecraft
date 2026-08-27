@@ -3,7 +3,7 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { integrationEvents, serverInstances, serverStatusSnapshots } from "../drizzle/schema";
-import { appendAuditLog, createMinecraftLinkCode, getDb, getDiscordDelivery, getDiscordLinkedPlayer, getDiscordPermissionPolicies, getIntegrationCommandStatus, getLatestServerStatus, getPendingDiscordDeliveries, getPendingIntegrationCommands, getPublicPlayerProfile, getRecentMinecraftEvents, ingestPlayerStatsSnapshot, markIntegrationCommandResult, recordDiscordDelivery, recordPlayerActivity, redeemDiscordLinkCode, revokeLinkCode, unlinkDiscordAccount } from "./db";
+import { appendAuditLog, createMinecraftLinkCode, getDb, getDiscordDelivery, getDiscordLinkedPlayer, getDiscordPermissionPolicies, getIntegrationCommandStatus, getLatestServerStatus, getPendingDiscordDeliveries, getPendingIntegrationCommands, getPendingRoleSyncs, getPublicPlayerProfile, getRecentMinecraftEvents, ingestPlayerStatsSnapshot, markIntegrationCommandResult, recordDiscordDelivery, recordPlayerActivity, redeemDiscordLinkCode, revokeLinkCode, unlinkDiscordAccount, upsertMinecraftPlayer } from "./db";
 
 const integrationEventSchema = z.object({
   id: z.string().min(8).max(64),
@@ -52,7 +52,11 @@ export function registerIntegrationApi(app: Express) {
     const limit = z.coerce.number().int().min(1).max(50).default(25).parse(req.query.limit ?? 25);
     const channelId = z.string().min(2).max(32).parse(req.query.channelId);
     const events = await getRecentMinecraftEvents(limit);
-    const withDelivery = await Promise.all(events.filter(event => ["player.joined", "player.left", "chat.minecraft"].includes(event.type)).map(async event => ({ ...event, delivery: await getDiscordDelivery(event.id, channelId) })));
+    const syncTypes = ["player.joined", "player.stats.snapshot"];
+    const bridgeTypes = ["player.joined", "player.left", "chat.minecraft"];
+    const allowedTypes = channelId === "system" ? syncTypes : bridgeTypes;
+    
+    const withDelivery = await Promise.all(events.filter(event => allowedTypes.includes(event.type)).map(async event => ({ ...event, delivery: await getDiscordDelivery(event.id, channelId) })));
     return res.status(200).json({ events: withDelivery });
   });
 
@@ -61,6 +65,12 @@ export function registerIntegrationApi(app: Express) {
     const channelId = z.string().min(2).max(32).parse(req.query.channelId);
     const pending = await getPendingDiscordDeliveries(channelId);
     return res.status(200).json({ events: pending.map(item => ({ ...item.event, delivery: item.delivery })) });
+  });
+
+  app.get("/api/integration/discord-roles/pending", async (req, res) => {
+    if (!hasValidIntegrationKey(getProvidedIntegrationKey(req))) return res.status(401).json({ events: [], error: "UNAUTHORIZED" });
+    const events = await getPendingRoleSyncs();
+    return res.status(200).json({ events });
   });
 
   app.post("/api/integration/discord-feed/delivery", async (req, res) => {
@@ -235,14 +245,17 @@ export function registerIntegrationApi(app: Express) {
 
     let processed = false;
     if (["player.joined", "player.left", "chat.minecraft"].includes(event.type)) {
-      const activity = z.object({ uuid: z.string().uuid(), username: z.string().min(1).max(16), message: z.string().max(255).optional() }).safeParse(event.payload);
+      const activity = z.object({ uuid: z.string().uuid(), username: z.string().min(1).max(16), rank: z.string().optional(), message: z.string().max(255).optional() }).safeParse(event.payload);
       if (activity.success) {
+        if (event.type === "player.joined" && activity.data.rank) {
+          await upsertMinecraftPlayer({ uuid: activity.data.uuid, username: activity.data.username, rank: activity.data.rank });
+        }
         await recordPlayerActivity({ uuid: activity.data.uuid, username: activity.data.username, type: event.type, summary: activity.data.message ?? (event.type === "player.joined" ? `${activity.data.username} entrou no servidor` : event.type === "player.left" ? `${activity.data.username} saiu do servidor` : `${activity.data.username} enviou uma mensagem`) });
         processed = true;
       }
     }
     if (event.type === "player.stats.snapshot") {
-      const stats = z.object({ uuid: z.string().uuid(), username: z.string().min(1).max(16), playtimeSeconds: z.number().int().min(0), blocksBroken: z.number().int().min(0).optional(), blocksPlaced: z.number().int().min(0).optional(), kills: z.number().int().min(0).optional(), deaths: z.number().int().min(0).optional(), achievementsCount: z.number().int().min(0).optional() }).safeParse(event.payload);
+      const stats = z.object({ uuid: z.string().uuid(), username: z.string().min(1).max(16), rank: z.string().optional(), playtimeSeconds: z.number().int().min(0), blocksBroken: z.number().int().min(0).optional(), blocksPlaced: z.number().int().min(0).optional(), kills: z.number().int().min(0).optional(), deaths: z.number().int().min(0).optional(), achievementsCount: z.number().int().min(0).optional() }).safeParse(event.payload);
       if (stats.success) {
         await ingestPlayerStatsSnapshot(stats.data);
         processed = true;

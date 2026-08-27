@@ -1,5 +1,5 @@
 import { createHash, randomInt } from "node:crypto";
-import { and, desc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, lte, notInArray, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -106,13 +106,19 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function upsertMinecraftPlayer(input: { uuid: string; username: string }) {
+export async function upsertMinecraftPlayer(input: { uuid: string; username: string; rank?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DATABASE_UNAVAILABLE");
+  const values: any = { uuid: input.uuid, username: input.username, lastSeenAt: new Date() };
+  if (input.rank) values.lastKnownRank = input.rank;
+
+  const updateSet: any = { username: input.username, lastSeenAt: new Date() };
+  if (input.rank) updateSet.lastKnownRank = input.rank;
+
   await db
     .insert(minecraftPlayers)
-    .values({ uuid: input.uuid, username: input.username, lastSeenAt: new Date() })
-    .onDuplicateKeyUpdate({ set: { username: input.username, lastSeenAt: new Date() } });
+    .values(values)
+    .onDuplicateKeyUpdate({ set: updateSet });
   const rows = await db.select().from(minecraftPlayers).where(eq(minecraftPlayers.uuid, input.uuid)).limit(1);
   if (!rows[0]) throw new Error("PLAYER_NOT_FOUND_AFTER_UPSERT");
   return rows[0];
@@ -141,8 +147,14 @@ export async function getPublicPlayerProfile(username: string) {
   const player = await db.select().from(minecraftPlayers).where(eq(minecraftPlayers.username, username)).limit(1);
   if (!player[0]) return undefined;
   const link = await db
-    .select({ discordAccountId: accountLinks.discordAccountId, siteUserId: accountLinks.siteUserId, linkedAt: accountLinks.linkedAt })
+    .select({ 
+      discordAccountId: accountLinks.discordAccountId, 
+      discordUserId: discordAccounts.discordUserId,
+      siteUserId: accountLinks.siteUserId, 
+      linkedAt: accountLinks.linkedAt 
+    })
     .from(accountLinks)
+    .leftJoin(discordAccounts, eq(accountLinks.discordAccountId, discordAccounts.id))
     .where(and(eq(accountLinks.minecraftPlayerId, player[0].id), isNull(accountLinks.unlinkedAt)))
     .limit(1);
   return { player: player[0], link: link[0] };
@@ -340,8 +352,8 @@ export async function getLinkedDiscordAccount(minecraftPlayerId: number) {
   return rows[0]?.discord;
 }
 
-export async function ingestPlayerStatsSnapshot(input: { uuid: string; username: string; playtimeSeconds: number; blocksBroken?: number; blocksPlaced?: number; kills?: number; deaths?: number; achievementsCount?: number }) {
-  const player = await upsertMinecraftPlayer({ uuid: input.uuid, username: input.username });
+export async function ingestPlayerStatsSnapshot(input: { uuid: string; username: string; rank?: string; playtimeSeconds: number; blocksBroken?: number; blocksPlaced?: number; kills?: number; deaths?: number; achievementsCount?: number }) {
+  const player = await upsertMinecraftPlayer({ uuid: input.uuid, username: input.username, rank: input.rank });
   const db = await getDb();
   if (!db) throw new Error("DATABASE_UNAVAILABLE");
   await db.insert(minecraftPlayerStats).values({ minecraftPlayerId: player.id, playtimeSeconds: input.playtimeSeconds, blocksBroken: input.blocksBroken ?? 0, blocksPlaced: input.blocksPlaced ?? 0, kills: input.kills ?? 0, deaths: input.deaths ?? 0, achievementsCount: input.achievementsCount ?? 0 }).onDuplicateKeyUpdate({ set: { playtimeSeconds: input.playtimeSeconds, blocksBroken: input.blocksBroken ?? 0, blocksPlaced: input.blocksPlaced ?? 0, kills: input.kills ?? 0, deaths: input.deaths ?? 0, achievementsCount: input.achievementsCount ?? 0 } });
@@ -407,9 +419,44 @@ export async function recordDiscordDelivery(input: { eventId: string; eventType:
   if (current) {
     await db.update(discordEventDeliveries).set({ status, attempts, lastError: input.success ? null : input.error ?? "DELIVERY_FAILED", nextAttemptAt }).where(eq(discordEventDeliveries.id, current.id));
   } else {
-    await db.insert(discordEventDeliveries).values({ eventId: input.eventId, eventType: input.eventType, channelId: input.channelId, status, attempts, lastError: input.success ? null : input.error ?? "DELIVERY_FAILED", nextAttemptAt });
+    await db.insert(discordEventDeliveries).values({ eventId: input.eventId, eventType: input.eventType, channelId: input.channelId, status, attempts, nextAttemptAt, lastError: input.success ? null : input.error ?? "DELIVERY_FAILED" });
   }
   return { status, attempts, key };
+}
+
+export async function getDiscordUserIdForPlayer(minecraftPlayerId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select({ discordUserId: discordAccounts.discordUserId })
+    .from(accountLinks)
+    .innerJoin(discordAccounts, eq(accountLinks.discordAccountId, discordAccounts.id))
+    .where(and(eq(accountLinks.minecraftPlayerId, minecraftPlayerId), isNull(accountLinks.unlinkedAt)))
+    .limit(1);
+  return rows[0]?.discordUserId;
+}
+
+export async function getPendingRoleSyncs() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Find events of type player.joined or player.stats.snapshot that haven't been synced to 'discord-roles'
+  const subquery = db
+    .select({ eventId: discordEventDeliveries.eventId })
+    .from(discordEventDeliveries)
+    .where(eq(discordEventDeliveries.channelId, "discord-roles"));
+
+  return db
+    .select({ event: integrationEvents })
+    .from(integrationEvents)
+    .where(
+      and(
+        inArray(integrationEvents.type, ["player.joined", "player.stats.snapshot"]),
+        notInArray(integrationEvents.id, subquery)
+      )
+    )
+    .orderBy(desc(integrationEvents.createdAt))
+    .limit(20);
 }
 
 export async function getPendingDiscordDeliveries(channelId: string, limit = 500) {

@@ -59,11 +59,14 @@ public final class MinecraftDiscordPlugin extends JavaPlugin implements Listener
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        backendClient.postEvent("player.joined", "minecraft", Map.of(
+        Map<String, Object> payload = new HashMap<>(Map.of(
                 "serverKey", serverKey,
                 "uuid", player.getUniqueId().toString(),
                 "username", player.getName()
         ));
+        String rank = optionalIntegrations.resolvePrimaryGroup(player);
+        if (rank != null) payload.put("rank", rank);
+        backendClient.postEvent("player.joined", "minecraft", payload);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
