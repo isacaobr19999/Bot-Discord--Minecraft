@@ -64,9 +64,14 @@ public final class MinecraftDiscordPlugin extends JavaPlugin implements Listener
                 "uuid", player.getUniqueId().toString(),
                 "username", player.getName()
         ));
-        String rank = optionalIntegrations.resolvePrimaryGroup(player);
-        if (rank != null) payload.put("rank", rank);
-        backendClient.postEvent("player.joined", "minecraft", payload);
+        optionalIntegrations.resolvePrimaryGroupAsync(player).whenComplete((rank, error) -> {
+            if (error != null) {
+                getLogger().warning("LuckPerms group lookup failed for " + player.getName() + ": " + error.getMessage());
+            } else if (rank != null) {
+                payload.put("rank", rank);
+            }
+            backendClient.postEvent("player.joined", "minecraft", payload);
+        });
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -116,19 +121,7 @@ public final class MinecraftDiscordPlugin extends JavaPlugin implements Listener
         int maximum = Bukkit.getMaxPlayers();
         double tps = Bukkit.getTPS().length > 0 ? Bukkit.getTPS()[0] : 20.0;
         for (Player player : Bukkit.getOnlinePlayers()) {
-            Map<String, Object> snapshot = new HashMap<>(Map.of(
-                    "uuid", player.getUniqueId().toString(),
-                    "username", player.getName(),
-                    "playtimeSeconds", player.getStatistic(Statistic.PLAY_ONE_MINUTE) / 20,
-                    "blocksBroken", sumBlockStatistic(player, Statistic.MINE_BLOCK),
-                    "blocksPlaced", sumBlockStatistic(player, Statistic.USE_ITEM),
-                    "kills", player.getStatistic(Statistic.PLAYER_KILLS),
-                    "deaths", player.getStatistic(Statistic.DEATHS),
-                    "achievementsCount", countCompletedAdvancements(player)
-            ));
-            String rank = optionalIntegrations.resolvePrimaryGroup(player);
-            if (rank != null) snapshot.put("rank", rank);
-            backendClient.postEvent("player.stats.snapshot", "minecraft", snapshot);
+            postPlayerStatsSnapshot(player);
         }
         backendClient.postEvent("server.heartbeat", "minecraft", Map.of(
                 "serverKey", serverKey,
@@ -139,6 +132,27 @@ public final class MinecraftDiscordPlugin extends JavaPlugin implements Listener
                 "minecraftVersion", Bukkit.getMinecraftVersion(),
                 "uptimeSeconds", TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startedAt)
         ));
+    }
+
+    private void postPlayerStatsSnapshot(Player player) {
+        Map<String, Object> snapshot = new HashMap<>(Map.of(
+                "uuid", player.getUniqueId().toString(),
+                "username", player.getName(),
+                "playtimeSeconds", player.getStatistic(Statistic.PLAY_ONE_MINUTE) / 20,
+                "blocksBroken", sumBlockStatistic(player, Statistic.MINE_BLOCK),
+                "blocksPlaced", sumBlockStatistic(player, Statistic.USE_ITEM),
+                "kills", player.getStatistic(Statistic.PLAYER_KILLS),
+                "deaths", player.getStatistic(Statistic.DEATHS),
+                "achievementsCount", countCompletedAdvancements(player)
+        ));
+        optionalIntegrations.resolvePrimaryGroupAsync(player).whenComplete((rank, error) -> {
+            if (error != null) {
+                getLogger().warning("LuckPerms group lookup failed for " + player.getName() + ": " + error.getMessage());
+            } else if (rank != null) {
+                snapshot.put("rank", rank);
+            }
+            backendClient.postEvent("player.stats.snapshot", "minecraft", snapshot);
+        });
     }
 
     private void pollAdminCommands() {

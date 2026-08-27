@@ -62,3 +62,8 @@
 - [x] Implementar um fluxo dedicado e testado para sincronização de rank LuckPerms -> cargo Discord, sem reutilizar o feed de bridge de chat de forma inadequada.
 - [x] Adicionar tratamento de erros e logs explícitos para sucesso/falha de atribuição e remoção de cargos Discord.
 - [ ] Validar localmente com checagem de sintaxe/testes e depois atualizar a VPS, confirmando em produção a troca automática de cargos para pelo menos um jogador vinculado.
+- [x] Diagnosticar e corrigir a falha do serviço mcbridge-discord após ativar o worker LuckPerms.
+- [x] Restaurar a unidade mcbridge-discord.service caso esteja ausente e validar o ID correto da aplicação Discord.
+- [x] Configurar o canal Discord 1492898167405150268 para logs seguros de sincronização LuckPerms e cargos VIP.
+- [x] Diagnosticar por que a alteração LuckPerms não gerou cargo nem log no canal de auditoria.
+- [x] Corrigir a resolução assíncrona do grupo LuckPerms no plugin e melhorar o diagnóstico de envio do rank.

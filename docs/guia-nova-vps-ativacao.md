@@ -165,6 +165,7 @@ DISCORD_GUILD_ID=ID_DA_GUILDA
 INTEGRATION_API_KEY=EXATAMENTE_A_MESMA_CHAVE_DO_BACKEND
 BACKEND_URL=https://api.seudominio.com.br
 DISCORD_BRIDGE_CHANNEL_ID=ID_DO_CANAL_DE_BRIDGE
+DISCORD_LOG_CHANNEL_ID=ID_DO_CANAL_DE_LOGS
 ```
 
 Proteja os arquivos:
@@ -298,7 +299,7 @@ sudo journalctl -u mcbridge-discord -f
 
 ## 10. Configurar o Discord
 
-No [Discord Developer Portal][4], ative **Message Content Intent** em **Bot → Privileged Gateway Intents**, porque a bridge precisa ler mensagens do canal Discord. Convide o bot para a guilda com os escopos `bot` e `applications.commands`.
+No [Discord Developer Portal][4], ative **Message Content Intent** em **Bot → Privileged Gateway Intents**, porque a bridge precisa ler mensagens do canal Discord. Convide o bot para a guilda com os escopos `bot` e `applications.commands`. Para auditoria de cargos, configure também `DISCORD_LOG_CHANNEL_ID` com o ID do canal de logs. O bot precisa de **View Channel**, **Send Messages**, **Embed Links** e **Manage Roles**; o cargo do bot deve estar acima dos cargos VIP que ele gerencia.
 
 Quando o serviço iniciar, o bot deve registrar os comandos na guilda informada. O resultado esperado no log é uma mensagem de login/ready. Se aparecer `401 Unauthorized`, o token está incorreto ou foi regenerado. Se aparecer `Used disallowed intents`, ative e salve o **Message Content Intent**.
 
@@ -314,7 +315,17 @@ integration-api-key: "A_MESMA_CHAVE_DO_BACKEND"
 server-key: "primary"
 ```
 
-Reinicie o Paper pelo Pterodactyl. A mensagem esperada é semelhante a `Minecraft Discord Platform enabled for server primary`. Se aparecer `Backend unavailable: ConnectException`, verifique se `backend-url` não está usando `localhost` e se o container consegue alcançar o domínio HTTPS. Se aparecer `401`, a chave do plugin não é a mesma chave do backend.
+Reinicie o Paper pelo Pterodactyl. A mensagem esperada é semelhante a `Minecraft Discord Platform enabled for server primary`. Se aparecer `Backend unavailable: ConnectException`, verifique se `backend-url` não está usando `localhost` e se o container consegue alcançar o domínio HTTPS. Se aparecer `401`, a chave do plugin não é a mesma chave do backend; copie exatamente a mesma `INTEGRATION_API_KEY` para `integration-api-key`, sem publicar a chave em logs ou no GitHub.
+
+Após o reinício, faça um jogador vinculado entrar no servidor e aguarde até 70 segundos. O plugin atualizado resolve o grupo LuckPerms de forma assíncrona e registra somente o tipo/status do evento, sem exibir a chave. Confirme o resultado pela API, sem imprimir a credencial:
+
+```bash
+curl -sS -H "x-integration-key: $(sudo awk -F= '$1==\"INTEGRATION_API_KEY\"{print $2; exit}' /etc/mcbridge/backend.env)" \
+  'https://api.seudominio.com.br/api/integration/player?username=Jogador' \
+  | grep -Eo '"(username|lastKnownRank|discordUserId)"[[:space:]]*:[[:space:]]*"?[A-Za-z0-9_ -]*"?'
+```
+
+O rank deve aparecer como `lastKnownRank` com o nome do grupo LuckPerms. Depois confirme no Discord o cargo correspondente e o embed no `DISCORD_LOG_CHANNEL_ID`. Uma consulta com rank `null` significa que o jogador ainda não gerou um evento de entrada/heartbeat com grupo válido; verifique se ele entrou após o reinício e se `LuckPerms=true` aparece no log.
 
 ## 12. Ativar e desativar quando quiser
 
@@ -375,6 +386,7 @@ Atualize o plugin Paper copiando um novo JAR, mas mantenha uma cópia do JAR ant
 | Paper | Console do Minecraft | plugin habilitado |
 | Discord | `/server` e `/players` no Discord | resposta com status e jogadores |
 | Bridge | mensagem no chat Minecraft | mensagem no canal configurado |
+| Sincronização LuckPerms | alterar grupo de jogador vinculado | cargo VIP atualizado e log no canal de auditoria |
 | Site e painel | `curl -I` nos domínios existentes | continuam respondendo normalmente |
 
 Os comandos `/server`, `/players`, `/link` e `/mc status` devem ser executados no **Discord**, não no console do Paper. O console do Minecraft aceita comandos Paper/Minecraft, enquanto os slash commands são registrados pelo bot no Discord.

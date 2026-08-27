@@ -27,7 +27,11 @@ final class BackendClient {
     CompletableFuture<HttpResponse<String>> postEvent(String type, String origin, Map<String, Object> payload) {
         Map<String, Object> event = Map.of("id", UUID.randomUUID().toString(), "idempotencyKey", UUID.randomUUID().toString(), "type", type, "origin", origin, "version", 1, "occurredAt", java.time.Instant.now().toString(), "payload", payload);
         return sendPost("/api/integration/events", gson.toJson(event), response -> {
-            if (response.statusCode() >= 300) System.err.println("[MinecraftDiscord] Event " + type + " rejected: " + response.statusCode());
+            if (response.statusCode() >= 300) {
+                System.err.println("[MinecraftDiscord] Event " + type + " rejected: " + response.statusCode());
+            } else {
+                System.out.println("[MinecraftDiscord] Event " + type + " accepted: " + response.statusCode());
+            }
         });
     }
 

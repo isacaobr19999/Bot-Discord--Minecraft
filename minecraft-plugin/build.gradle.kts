@@ -30,3 +30,7 @@ tasks.processResources {
         expand("version" to project.version)
     }
 }
+
+tasks.jar {
+    archiveFileName.set("PlayStorCraft-Site.jar")
+}
